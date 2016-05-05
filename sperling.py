@@ -56,25 +56,29 @@ quit_experiment = False
 
 # size of the font for stimuli
 fontsize_stimuli = 70
-fontsize_instruction = 30
+fontsize_instruction = 35
 
 instruction_text = u'Za chwilę zostaną Ci zaprezentowane tablice ze znakami. '
 instruction_text += u'Każda tablica będzie miała trzy rzędy. '
 instruction_text += u'Po prezentacji każdej tablicy usłyszysz jeden z '
 instruction_text += u'trzech dźwięków: wysoki, średni lub niski. \n'
-instruction_text += u'Twoim zadaniem będzie przypomnienie sobie oraz zapisanie '
-instruction_text += u'znaków z rzędu wskazanego przez wysokość dźwięku: '
-instruction_text += u'odpowiednio: najwyższego rzędu, średniego lub dolnego. \n'
-instruction_text += u'\nAby rozpocząć naciśnij spację. '
+instruction_text += u'Twoim zadaniem będzie przypomnienie sobie oraz '
+instruction_text += u'zapisanie znaków z rzędu wskazanego przez wysokość '
+instruction_text += u'dźwięku, odpowiednio: najwyższego rzędu, średniego lub '
+instruction_text += u'dolnego. \n'
+instruction_text += u'Błędnie wprowadzone litery kasuj za pomocą klawisza '
+instruction_text += u'BACKSPACE, a ostateczną decyzję zatwierdzaj za pomocą '
+instruction_text += u'przycisku ENTER. \n'
+instruction_text += u'\nPo naciśnięciu spacji usłyszysz przykłady dźwięków. '
 
 # with mask or without after the stimulus
-mask_appear = True
+mask_appear = False
 
 # how many trials in one experiment
-n_trials = 2
+n_trials = 5
 
 # matrix size: x rows, y columns
-x, y = 3, 4
+x, y = 3, 3
 
 ########################
 # Available signs
@@ -99,22 +103,29 @@ init_gap_time = 1.0
 exposure_time_matrix = 0.5
 
 # Stimulus-onset asynchrony - time between the stimulus and the mask
-soa = 0.0
+soa_mask = 0.0
 
 # stimulus exposure time, matrix of signs (in seconds)
-exposure_time_mask = 0.5
+exposure_time_mask = 0.25
 
 # gap between mask (or matrix) and the sound
-time_before_sound = 0.5
+time_before_sound = 0.0
 
 # for how long play the sound
-sound_duration = 0.5
+sound_duration = 0.25
 
 # gap between sound played and the recalling stage
-time_after_sound = 0.5
+time_after_sound = 0.0
 
 # Inter Trial Interval, time between an answer and next stimulus (in seconds)
 iti = 1.0
+
+# collect all settings in one list to write it to the output file
+settings = [
+    n_trials, int(mask_appear), x, y, signs,
+    init_gap_time, exposure_time_matrix, soa_mask, exposure_time_mask,
+    time_before_sound, sound_duration, time_after_sound, iti
+    ]
 
 # ### END OF STIMULI SETTINGS
 ################################
@@ -134,46 +145,6 @@ iti = 1.0
 
 ################################
 # ### GENERATE STIMULI
-'''
-    Tutaj trzeba wrzucic generator generujacy bodzce.
-    Dostepne znaki nalezy zczytac ze zmiennej 'signs', a wymiary matrycy
-    ze zmiennych 'x' oraz 'y'.
-    Format bodzcow musi byc taki jak w 'stimuli_raw' przedstawionych ponizej.
-
-    Na koniec musi sie tez wygenerowac maska o takich samych rozmiarach
-    jak matryca.
-
-stimuli_raw = [
-    [
-        'A B C D',
-        'E F G H',
-        'J K L M'
-    ],
-    [
-        'J K L M',
-        'A B C D',
-        'E F G H',
-    ],
-    ]
-
-mask_raw = [
-    '# # # #',
-    '# # # #',
-    '# # # #'
-    ]
-
-    Od tego miejsca program sam przemieli zmienna 'stimuli_raw' tak, zeby dalo
-    sie ja wyswietlic za pomoca psychopy.
-
-stimuli = []
-mask = ''.join([i + '\n' for i in mask_raw])
-
-for stimulus_raw in stimuli_raw:
-    stimuli.append(''.join([i + '\n' for i in stimulus_raw]))
-
-trials = []
-'''
-
 
 signs_list = []
 for char in signs:
@@ -234,20 +205,21 @@ empty = visual.TextStim(
 
 ################################
 # ### SOUNDS
-low = sound.Sound(
-    value='C', sampleRate=44100, secs=sound_duration, bits=8, octave=3
+
+high = sound.Sound(
+    value='C', sampleRate=44100, secs=sound_duration, bits=8, octave=6
     )
-low.setVolume(0.45)
+high.setVolume(0.05)
 
 mid = sound.Sound(
     value='C', sampleRate=44100, secs=sound_duration, bits=8, octave=4
     )
-mid.setVolume(0.35)
+mid.setVolume(0.25)
 
-high = sound.Sound(
-    value='C', sampleRate=44100, secs=sound_duration, bits=8, octave=5
+low = sound.Sound(
+    value='C', sampleRate=44100, secs=sound_duration, bits=8, octave=2
     )
-high.setVolume(0.1)
+low.setVolume(0.5)
 
 sounds = [high, mid, low]
 # ### END OF SOUNDS
@@ -276,11 +248,46 @@ instruction.draw()
 mywin.flip()
 
 # wait until space pressed
-while 'space' not in event.getKeys():
-    pass
+while True:
+    keys_list = event.getKeys()
+    if 'space' in keys_list:
+        break
+    elif 'escape' in keys_list:
+        quit_experiment = True
+        break
+
+empty.draw()
+mywin.flip()
+
+for snd in sounds:
+    snd.play()
+    core.wait(1.0)
+
+
+visual.TextStim(
+    win=mywin,
+    text=u'Naciśnij spację aby rozpocząć eksperyment.', font='Monospace',
+    pos=(0, 0), height=fontsize_instruction
+    ).draw()
+mywin.flip()
+
+while True:
+    keys_list = event.getKeys()
+    if 'space' in keys_list:
+        break
+    elif 'escape' in keys_list:
+        quit_experiment = True
+        break
+
+empty.draw()
+mywin.flip()
+core.wait(init_gap_time)
 
 # iterate across all stimuli
 for i in range(n_trials):
+
+    if quit_experiment:
+        break
 
     # randomly choose which row will be recalled
     row = random.randint(0, 2)
@@ -305,9 +312,14 @@ for i in range(n_trials):
     # diplay the mask (if set)
     if mask_appear:
         # time gap between the matrix and the mask
-        if soa > 0.0:
-            core.wait(soa)
+        if soa_mask > 0.0:
+            core.wait(soa_mask)
         mask.draw()
+        mywin.flip()
+        core.wait(exposure_time_mask)
+    else:
+        # even when no mask is applied it has to be the same amount of time
+        empty.draw()
         mywin.flip()
         core.wait(exposure_time_mask)
 
@@ -322,7 +334,11 @@ for i in range(n_trials):
 
     # (re)set the empty space to fill
     # it has to be list because python doesn't allow: 'ab_'[2]='c'
-    text_typed = ['_', ' ', '_', ' ', '_',  ' ', '_']
+    text_typed = []
+    for i in range(x-1):
+        text_typed.append(' ')
+        text_typed.append(' ')
+    text_typed.append(' ')
 
     # set counter to navigate which letter is the participant filling
     counter = 0
@@ -331,7 +347,7 @@ for i in range(n_trials):
     visual.TextStim(
         win=mywin,
         text=''.join(text_typed), font='Monospace',
-        pos=(0, -100), height=fontsize_stimuli
+        pos=(0, -120), height=fontsize_stimuli
         ).draw()
     mywin.flip()
 
@@ -354,22 +370,22 @@ for i in range(n_trials):
             visual.TextStim(
                 win=mywin,
                 text=''.join(text_typed), font='Monospace',
-                pos=(0, -100), height=fontsize
+                pos=(0, -120), height=fontsize_stimuli
                 ).draw()
             mywin.flip()
         # if all signs are inputed, go to another trial
         elif 'return' in keys_list:
-            if counter == 8:
+            if counter == x*2:
                 break
         # read sign pressed
         else:
-            if counter < 8:
+            if counter < x*2:
                 text_typed[counter] = keys_list[0].upper()
                 if len(keys_list[0]) == 1:
                     visual.TextStim(
                         win=mywin,
                         text=''.join(text_typed), font='Monospace',
-                        pos=(0, -100), height=fontsize
+                        pos=(0, -120), height=fontsize_stimuli
                         ).draw()
                     mywin.flip()
                     counter += 2
@@ -382,17 +398,21 @@ for i in range(n_trials):
 
     trials.append(int(correct == answer))
 
+    empty.draw()
+    mywin.flip()
+    core.wait(iti)
+
 if not trials:
     'Quitting, not even one trial acquired'
+    mywin.close()
 else:
+    mywin.close()
     trials_correct = sum(trials)
     trials_total = len(trials)
 
     percent_correct = int((sum(trials)/float(len(trials))) * 100)
     print('correct answers: %s/%s' % (sum(trials), len(trials)))
     print('percent correct: %s%%' % percent_correct)
-
-    scores = [trials_correct, trials_total, percent_correct]
 
     info = {
         'kierunek(p=psycho/c=cogni/i=inny/n=nie studiuje)': 'i',
@@ -408,9 +428,11 @@ else:
     register.append(info['wiek'])
     register.append(info['kierunek(p=psycho/c=cogni/i=inny/n=nie studiuje)'])
 
-    with open('output/output_%s.csv' % time_code, 'w') as text_file:
+    with open('output.csv' % time_code, 'a') as text_file:
         save = csv.writer(text_file)
-        save.writerow(scores + register)
+        save.writerow(
+            [time_code, trials_correct] + settings + register + trials
+            )
 
 mywin.close()
 
