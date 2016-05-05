@@ -29,7 +29,7 @@ import csv
 # ### MONITOR AND WINDOW
 
 # for debugging process it is recomendened not to use fulscreen
-fullscr = False
+fullscr = True
 
 # width and height of the window in pixels (it matters only if fullscr == False
 # win_width, win_height = 2560, 1440
@@ -66,16 +66,21 @@ instruction_text += u'Twoim zadaniem będzie przypomnienie sobie oraz '
 instruction_text += u'zapisanie znaków z rzędu wskazanego przez wysokość '
 instruction_text += u'dźwięku, odpowiednio: najwyższego rzędu, średniego lub '
 instruction_text += u'dolnego. \n'
-instruction_text += u'Błędnie wprowadzone litery kasuj za pomocą klawisza '
+instruction_text += u'Błędnie wprowadzone znaki kasuj za pomocą klawisza '
 instruction_text += u'BACKSPACE, a ostateczną decyzję zatwierdzaj za pomocą '
 instruction_text += u'przycisku ENTER. \n'
+instruction_text += u'\nJeśli nie pamiętasz znaków lub nie masz pewności - '
+instruction_text += u'zgaduj. Musisz coś wprowadzić.\n'
 instruction_text += u'\nPo naciśnięciu spacji usłyszysz przykłady dźwięków. '
 
+end_text = u'Koniec eksperymentu. Dziękujemy za udział w badaniu. :)\n'
+end_text += u'Proszę zawołaj eksperymentatora. Nie wstawaj jeszcze z miejsca.'
+
 # with mask or without after the stimulus
-mask_appear = False
+mask_appear = True
 
 # how many trials in one experiment
-n_trials = 5
+n_trials = 50
 
 # matrix size: x rows, y columns
 x, y = 3, 3
@@ -118,7 +123,7 @@ sound_duration = 0.25
 time_after_sound = 0.0
 
 # Inter Trial Interval, time between an answer and next stimulus (in seconds)
-iti = 1.0
+iti = 1.5
 
 # collect all settings in one list to write it to the output file
 settings = [
@@ -150,30 +155,20 @@ signs_list = []
 for char in signs:
     signs_list.append(char)
 
-mask = ''
-for i in range(x):
-        for j in range(y):
-            mask += '# '
-        mask += '\n'
+mask_text = '\n'.join(' '.join(['#' for j in range(y)]) for i in range(x))
 
 
 def generateStimulus(row, signs_list, x, y):
     random.shuffle(signs_list)
-    stimulus = ''
-    stimulus_list = []
-    n = 0
-    for i in range(x):
-        verse = ''
-        for j in range(y):
-            verse += signs_list[j+n] + ' '
-        n += y
-        stimulus_list.append(verse)
-    correct = ''.join(stimulus_list[row])
-    correct = correct.replace(' ', '')
-    stimulus = ''.join(i + '\n' for i in stimulus_list)
+
+    stimulus = '\n'.join(
+        ' '.join([signs_list[i*y+j] for j in range(y)]) for i in range(x)
+        )
+    correct = ''.join([signs_list[row*y+i] for i in range(y)])
     return stimulus, correct
 
 trials = []
+letters = []
 
 # ### END OF GENERATE STIMULI
 ################################
@@ -191,7 +186,7 @@ instruction = visual.TextStim(
 
 mask = visual.TextStim(
     win=mywin,
-    text=mask, font='Monospace',
+    text=mask_text, font='Monospace',
     pos=(0, 0), height=fontsize_stimuli
     )
 
@@ -200,26 +195,34 @@ empty = visual.TextStim(
     text='', font='Monospace',
     pos=(0, 0), height=fontsize_stimuli
     )
+
+end = visual.TextStim(
+    win=mywin,
+    text=end_text, font='Monospace',
+    pos=(0, 0), height=fontsize_instruction
+    )
 # ### END OF CONSTANT BOARDS
 ################################
 
 ################################
 # ### SOUNDS
 
+volume_main = 1.5
+
 high = sound.Sound(
     value='C', sampleRate=44100, secs=sound_duration, bits=8, octave=6
     )
-high.setVolume(0.05)
+high.setVolume(volume_main * 0.05)
 
 mid = sound.Sound(
     value='C', sampleRate=44100, secs=sound_duration, bits=8, octave=4
     )
-mid.setVolume(0.25)
+mid.setVolume(volume_main *0.25)
 
 low = sound.Sound(
     value='C', sampleRate=44100, secs=sound_duration, bits=8, octave=2
     )
-low.setVolume(0.5)
+low.setVolume(volume_main * 0.5)
 
 sounds = [high, mid, low]
 # ### END OF SOUNDS
@@ -256,32 +259,33 @@ while True:
         quit_experiment = True
         break
 
-empty.draw()
-mywin.flip()
+if not quit_experiment:
+    empty.draw()
+    mywin.flip()
 
-for snd in sounds:
-    snd.play()
-    core.wait(1.0)
+    for snd in sounds:
+        snd.play()
+        core.wait(1.0)
 
+    visual.TextStim(
+        win=mywin,
+        text=u'Naciśnij spację aby rozpocząć eksperyment.', font='Monospace',
+        pos=(0, 0), height=fontsize_instruction
+        ).draw()
+    mywin.flip()
 
-visual.TextStim(
-    win=mywin,
-    text=u'Naciśnij spację aby rozpocząć eksperyment.', font='Monospace',
-    pos=(0, 0), height=fontsize_instruction
-    ).draw()
-mywin.flip()
+    while True:
+        keys_list = event.getKeys()
+        if 'space' in keys_list:
+            break
+        elif 'escape' in keys_list:
+            quit_experiment = True
+            break
 
-while True:
-    keys_list = event.getKeys()
-    if 'space' in keys_list:
-        break
-    elif 'escape' in keys_list:
-        quit_experiment = True
-        break
-
-empty.draw()
-mywin.flip()
-core.wait(init_gap_time)
+if not quit_experiment:
+    empty.draw()
+    mywin.flip()
+    core.wait(init_gap_time)
 
 # iterate across all stimuli
 for i in range(n_trials):
@@ -324,13 +328,11 @@ for i in range(n_trials):
         core.wait(exposure_time_mask)
 
     # play the sound indicating the row to be recalled
-    empty.draw()
-    mywin.flip()
-    core.wait(time_before_sound)
+    if time_before_sound > 0.0:
+        empty.draw()
+        mywin.flip()
+        core.wait(time_before_sound)
 
-    sounds[row].play()
-
-    core.wait(time_after_sound)
 
     # (re)set the empty space to fill
     # it has to be list because python doesn't allow: 'ab_'[2]='c'
@@ -347,9 +349,14 @@ for i in range(n_trials):
     visual.TextStim(
         win=mywin,
         text=''.join(text_typed), font='Monospace',
-        pos=(0, -120), height=fontsize_stimuli
+        pos=(0, -160), height=fontsize_stimuli
         ).draw()
     mywin.flip()
+
+    sounds[row].play()
+
+    if time_after_sound > 0.0:
+        core.wait(time_after_sound)
 
     # filling begins
     while True:
@@ -370,7 +377,7 @@ for i in range(n_trials):
             visual.TextStim(
                 win=mywin,
                 text=''.join(text_typed), font='Monospace',
-                pos=(0, -120), height=fontsize_stimuli
+                pos=(0, -160), height=fontsize_stimuli
                 ).draw()
             mywin.flip()
         # if all signs are inputed, go to another trial
@@ -385,7 +392,7 @@ for i in range(n_trials):
                     visual.TextStim(
                         win=mywin,
                         text=''.join(text_typed), font='Monospace',
-                        pos=(0, -120), height=fontsize_stimuli
+                        pos=(0, -160), height=fontsize_stimuli
                         ).draw()
                     mywin.flip()
                     counter += 2
@@ -397,22 +404,25 @@ for i in range(n_trials):
     answer = ''.join(text_typed).replace(' ', '')
 
     trials.append(int(correct == answer))
+    letters.append(sum([correct[i] == answer[i] for i in range(len(correct))]))
 
     empty.draw()
     mywin.flip()
     core.wait(iti)
 
 if not trials:
-    'Quitting, not even one trial acquired'
+    print('Quitting, not even one trial acquired')
     mywin.close()
 else:
+    end.draw()
+    mywin.flip()
+
+    while not 'escape' in event.getKeys():
+        pass
+
     mywin.close()
     trials_correct = sum(trials)
-    trials_total = len(trials)
-
-    percent_correct = int((sum(trials)/float(len(trials))) * 100)
-    print('correct answers: %s/%s' % (sum(trials), len(trials)))
-    print('percent correct: %s%%' % percent_correct)
+    letters_correct = sum(letters)
 
     info = {
         'kierunek(p=psycho/c=cogni/i=inny/n=nie studiuje)': 'i',
@@ -428,12 +438,14 @@ else:
     register.append(info['wiek'])
     register.append(info['kierunek(p=psycho/c=cogni/i=inny/n=nie studiuje)'])
 
-    with open('output.csv' % time_code, 'a') as text_file:
+    with open('output.csv', 'a') as text_file:
         save = csv.writer(text_file)
         save.writerow(
-            [time_code, trials_correct] + settings + register + trials
+            [time_code, letters_correct, trials_correct] +
+            settings + register + trials + letters
             )
 
+core.quit()
 mywin.close()
 
 
