@@ -77,7 +77,7 @@ end_text = u'Koniec eksperymentu. Dziękujemy za udział w badaniu. :)\n'
 end_text += u'Proszę zawołaj eksperymentatora. Nie wstawaj jeszcze z miejsca.'
 
 # with mask or without after the stimulus
-mask_appear = True
+mask_appear = False
 
 # how many trials in one experiment
 n_trials = 50
@@ -130,6 +130,12 @@ settings = [
     n_trials, int(mask_appear), x, y, signs,
     init_gap_time, exposure_time_matrix, soa_mask, exposure_time_mask,
     time_before_sound, sound_duration, time_after_sound, iti
+    ]
+
+settings_labels = [
+    'n_trials', 'mask_appear', 'x', 'y', 'signs',
+    'init_gap_time', 'exposure_time_matrix', 'soa_mask', 'exposure_time_mask',
+    'time_before_sound', 'sound_duration', 'time_after_sound', 'iti'
     ]
 
 # ### END OF STIMULI SETTINGS
@@ -190,6 +196,12 @@ mask = visual.TextStim(
     pos=(0, 0), height=fontsize_stimuli
     )
 
+fix = visual.TextStim(
+    win=mywin,
+    text='+', font='Monospace',
+    pos=(0, 0), height=fontsize_stimuli
+    )
+
 empty = visual.TextStim(
     win=mywin,
     text='', font='Monospace',
@@ -217,7 +229,7 @@ high.setVolume(volume_main * 0.05)
 mid = sound.Sound(
     value='C', sampleRate=44100, secs=sound_duration, bits=8, octave=4
     )
-mid.setVolume(volume_main *0.25)
+mid.setVolume(volume_main * 0.25)
 
 low = sound.Sound(
     value='C', sampleRate=44100, secs=sound_duration, bits=8, octave=2
@@ -333,7 +345,6 @@ for i in range(n_trials):
         mywin.flip()
         core.wait(time_before_sound)
 
-
     # (re)set the empty space to fill
     # it has to be list because python doesn't allow: 'ab_'[2]='c'
     text_typed = []
@@ -417,7 +428,7 @@ else:
     end.draw()
     mywin.flip()
 
-    while not 'escape' in event.getKeys():
+    while 'escape' not in event.getKeys():
         pass
 
     mywin.close()
@@ -438,11 +449,22 @@ else:
     register.append(info['wiek'])
     register.append(info['kierunek(p=psycho/c=cogni/i=inny/n=nie studiuje)'])
 
+    register_labels = ['gender', 'age', 'faculty']
+
     with open('output.csv', 'a') as text_file:
         save = csv.writer(text_file)
         save.writerow(
             [time_code, letters_correct, trials_correct] +
             settings + register + trials + letters
+            )
+
+    with open('output_header.csv', 'a') as text_file:
+        save = csv.writer(text_file)
+        save.writerow(
+            ['time_code', 'letters_correct', 'trials_correct'] +
+            settings_labels + register_labels +
+            ['trials' for i in range(len(trials))] +
+            ['letters' for i in range(len(letters))]
             )
 
 core.quit()
