@@ -31,6 +31,8 @@ import csv
 # for debugging process it is recomendened not to use fulscreen
 fullscr = True
 
+color_background = 'gray'
+
 # width and height of the window in pixels (it matters only if fullscr == False
 # win_width, win_height = 2560, 1440
 win_width, win_height = 1000, 700
@@ -41,7 +43,8 @@ mywin = visual.Window(
     monitor='testMonitor',
     winType='pyglet',
     units='pix',
-    fullscr=fullscr
+    fullscr=fullscr,
+    rgb=color_background
     )
 mywin.setMouseVisible(False)
 
@@ -57,6 +60,9 @@ quit_experiment = False
 # size of the font for stimuli
 fontsize_stimuli = 70
 fontsize_instruction = 35
+
+color_font = 'white'
+bolded_font = False
 
 instruction_text = u'Za chwilę zostaną Ci zaprezentowane tablice ze znakami. '
 instruction_text += u'Każda tablica będzie miała trzy rzędy. '
@@ -79,8 +85,11 @@ end_text += u'Proszę zawołaj eksperymentatora. Nie wstawaj jeszcze z miejsca.'
 # with mask or without after the stimulus
 mask_appear = False
 
+# cue
+fixation_point = False
+
 # how many trials in one experiment
-n_trials = 50
+n_trials = 20
 
 # matrix size: x rows, y columns
 x, y = 3, 3
@@ -105,7 +114,7 @@ signs = 'BCDFGHJKLMNPQRSTVWXZ'
 init_gap_time = 1.0
 
 # stimulus exposure time, matrix of signs (in seconds)
-exposure_time_matrix = 0.5
+exposure_time_matrix = 0.1
 
 # Stimulus-onset asynchrony - time between the stimulus and the mask
 soa_mask = 0.0
@@ -187,31 +196,36 @@ instruction = visual.TextStim(
     win=mywin,
     text=instruction_text,
     font='Monospace',
-    pos=(0, 0), height=fontsize_instruction, wrapWidth=win_width*0.9
+    pos=(0, 0), height=fontsize_instruction, wrapWidth=win_width*0.9,
+    color=color_font, bold=bolded_font
     )
 
 mask = visual.TextStim(
     win=mywin,
     text=mask_text, font='Monospace',
-    pos=(0, 0), height=fontsize_stimuli
+    pos=(0, 0), height=fontsize_stimuli,
+    color=color_font, bold=bolded_font
     )
 
 fix = visual.TextStim(
     win=mywin,
     text='+', font='Monospace',
-    pos=(0, 0), height=fontsize_stimuli
+    pos=(0, 0), height=fontsize_stimuli,
+    color=color_font, bold=bolded_font
     )
 
 empty = visual.TextStim(
     win=mywin,
     text='', font='Monospace',
-    pos=(0, 0), height=fontsize_stimuli
+    pos=(0, 0), height=fontsize_stimuli,
+    color=color_font, bold=bolded_font
     )
 
 end = visual.TextStim(
     win=mywin,
     text=end_text, font='Monospace',
-    pos=(0, 0), height=fontsize_instruction
+    pos=(0, 0), height=fontsize_instruction,
+    color=color_font, bold=bolded_font
     )
 # ### END OF CONSTANT BOARDS
 ################################
@@ -282,7 +296,8 @@ if not quit_experiment:
     visual.TextStim(
         win=mywin,
         text=u'Naciśnij spację aby rozpocząć eksperyment.', font='Monospace',
-        pos=(0, 0), height=fontsize_instruction
+        pos=(0, 0), height=fontsize_instruction,
+        color=color_font, bold=bolded_font
         ).draw()
     mywin.flip()
 
@@ -295,7 +310,10 @@ if not quit_experiment:
             break
 
 if not quit_experiment:
-    empty.draw()
+    if fixation_point:
+        fix.draw()
+    else:
+        empty.draw()
     mywin.flip()
     core.wait(init_gap_time)
 
@@ -317,7 +335,8 @@ for i in range(n_trials):
     matrix = visual.TextStim(
         win=mywin,
         text=stimulus, font='Monospace',
-        pos=(0, 0), height=fontsize_stimuli
+        pos=(0, 0), height=fontsize_stimuli,
+        color=color_font, bold=bolded_font
         )
 
     # diplay the matrix of signs
@@ -360,7 +379,8 @@ for i in range(n_trials):
     visual.TextStim(
         win=mywin,
         text=''.join(text_typed), font='Monospace',
-        pos=(0, -160), height=fontsize_stimuli
+        pos=(0, -160), height=fontsize_stimuli,
+        color=color_font, bold=bolded_font
         ).draw()
     mywin.flip()
 
@@ -388,7 +408,8 @@ for i in range(n_trials):
             visual.TextStim(
                 win=mywin,
                 text=''.join(text_typed), font='Monospace',
-                pos=(0, -160), height=fontsize_stimuli
+                pos=(0, -160), height=fontsize_stimuli,
+                color=color_font, bold=bolded_font
                 ).draw()
             mywin.flip()
         # if all signs are inputed, go to another trial
@@ -403,7 +424,8 @@ for i in range(n_trials):
                     visual.TextStim(
                         win=mywin,
                         text=''.join(text_typed), font='Monospace',
-                        pos=(0, -160), height=fontsize_stimuli
+                        pos=(0, -160), height=fontsize_stimuli,
+                        color=color_font, bold=bolded_font
                         ).draw()
                     mywin.flip()
                     counter += 2
@@ -417,7 +439,10 @@ for i in range(n_trials):
     trials.append(int(correct == answer))
     letters.append(sum([correct[i] == answer[i] for i in range(len(correct))]))
 
-    empty.draw()
+    if fixation_point:
+        fix.draw()
+    else:
+        empty.draw()
     mywin.flip()
     core.wait(iti)
 
