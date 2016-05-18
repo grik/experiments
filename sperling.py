@@ -29,7 +29,7 @@ import csv
 # ### MONITOR AND WINDOW
 
 # for debugging process it is recomendened not to use fulscreen
-fullscr = True
+fullscr = False
 
 color_background = 'gray'
 
@@ -83,7 +83,7 @@ end_text = u'Koniec eksperymentu. Dziękujemy za udział w badaniu. :)\n'
 end_text += u'Proszę zawołaj eksperymentatora. Nie wstawaj jeszcze z miejsca.'
 
 # with mask or without after the stimulus
-mask_appear = False
+mask_appear = True
 
 # cue
 fixation_point = False
@@ -111,10 +111,10 @@ signs = 'BCDFGHJKLMNPQRSTVWXZ'
 ########################
 
 # time before first stimulus appears, after instruction (in seconds)
-init_gap_time = 1.0
+init_gap_time = 2.0
 
 # stimulus exposure time, matrix of signs (in seconds)
-exposure_time_matrix = 0.1
+exposure_time_matrix = 0.5
 
 # Stimulus-onset asynchrony - time between the stimulus and the mask
 soa_mask = 0.0
